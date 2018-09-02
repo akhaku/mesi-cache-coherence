@@ -31,14 +31,13 @@ class L1Cache {
           this.cacheLineToState[cacheLine] = MESIState.M;
           break;
         case MESIState.S:
+        case MESIState.I:
         case MESIState.EMPTY:
           // request for ownership - ack returns the current value, lets us change state
           const currentValue = this.l2Cache.requestForOwnership(address, this);
           this.cacheLineToState[cacheLine] = MESIState.M;
           this.addressToValue[address] = value;
           break;
-        case MESIState.I:
-          throw new Error('Invalid state, what do we do?');
     }
   }
 
@@ -76,7 +75,7 @@ class L1Cache {
       throw new Error(`Missing data at address ${address}`);
     }
 
-    const state = cacheLineToState[cacheLine];
+    const state = this.cacheLineToState[cacheLine];
     switch (state) {
       case MESIState.M:
       case MESIState.E:

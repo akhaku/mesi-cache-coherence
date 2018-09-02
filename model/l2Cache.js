@@ -36,12 +36,14 @@ class L2Cache {
     } else {
       const [l1CacheWithValue, state] = cacheAndState;
       switch (state) {
-          case MESIState.S: // other cache has it
+          case MESIState.M: // other cache has it
+          case MESIState.E:
+          case MESIState.S:
             // when writing, why do we care about the previous value?
             this.addressToCacheAndState[address] = [requestor, MESIState.E];
             return l1CacheWithValue.snoopInvalidate(address);
           default:
-            throw new Error('What do we do here?');
+            throw new Error(`Other cache has state ${state} - what do we do here?`);
       }
     }
   }
@@ -72,9 +74,11 @@ class L2Cache {
   }
 }
 
+L2Cache.MAIN_MEMORY_CONTENTS = 'x';
+
 function loadFromMainMemory(address) {
   // load some dummy value from main memory
-  return 'x';
+  return L2Cache.MAIN_MEMORY_CONTENTS;
 }
 
 module.exports = L2Cache;

@@ -4,7 +4,7 @@
   "description": "An implementation of a simple cache coherence algorithm, inspired by https://software.rajivprab.com/2018/04/29/myths-programmers-believe-about-cpu-caches/",
   "main": "index.js",
   "scripts": {
-    "test": "test"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -18,5 +18,9 @@
   "bugs": {
     "url": "https://github.com/akhaku/cache-coherence/issues"
   },
-  "homepage": "https://github.com/akhaku/cache-coherence#readme"
+  "homepage": "https://github.com/akhaku/cache-coherence#readme",
+  "dependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0"
+  }
 }
