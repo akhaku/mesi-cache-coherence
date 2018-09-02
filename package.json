@@ -1,0 +1,22 @@
+{
+  "name": "cache-coherence",
+  "version": "1.0.0",
+  "description": "An implementation of a simple cache coherence algorithm, inspired by https://software.rajivprab.com/2018/04/29/myths-programmers-believe-about-cpu-caches/",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/akhaku/cache-coherence.git"
+  },
+  "keywords": [
+    "cache-coherence"
+  ],
+  "author": "Ammar Khaku",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/akhaku/cache-coherence/issues"
+  },
+  "homepage": "https://github.com/akhaku/cache-coherence#readme"
+}
