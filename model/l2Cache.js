@@ -7,7 +7,10 @@ const MESIState = require('./MESIState');
  */
 class L2Cache {
   constructor(numL1Caches) {
-   // an address (not cache line, right?) to an array of L1Cache, MESIState
+    /* An address (not cache line, right?) to an array of L1Cache, MESIState.
+     * I think we technically should be storing an array of L1Caches and their known state
+     * for that address, but we're being lazy here since we only store a single L1Cache.
+     */
     this.addressToCacheAndState = {};
     this.l1Caches = [];
     for (let i = 0; i < numL1Caches; i++) {
