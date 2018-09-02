@@ -11,7 +11,8 @@
     "url": "git+ssh://git@github.com/akhaku/cache-coherence.git"
   },
   "keywords": [
-    "cache-coherence"
+    "cache-coherence",
+    "MESI"
   ],
   "author": "Ammar Khaku",
   "license": "ISC",
