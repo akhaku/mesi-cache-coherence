@@ -11,3 +11,4 @@ console.log(`L1 cache 0: ${l1Cache0.getName()}`);
 console.log(`L1 cache 1: ${l1Cache1.getName()}`);
 
 l1Cache0.write(MEMORY_ADDRESS, 'a');
+console.log(l1Cache1.read(MEMORY_ADDRESS));

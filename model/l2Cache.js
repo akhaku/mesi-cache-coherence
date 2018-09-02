@@ -7,6 +7,7 @@ const MESIState = require('./MESIState');
  */
 class L2Cache {
   constructor(numL1Caches) {
+   // an address (not cache line, right?) to an array of L1Cache, MESIState
     this.addressToCacheAndState = {};
     this.l1Caches = [];
     for (let i = 0; i < numL1Caches; i++) {
@@ -21,18 +22,23 @@ class L2Cache {
     return this.l1Caches;
   }
 
+  /**
+   * When a L1Cache tries to write to a memory address and it hasn't already written that
+   * memory or have cached it exclusively, it calls this method to get ownership of the
+   * address.
+   */
   requestForOwnership(address, requestor) {
-    const cacheAndState = addressToCacheAndState[address]; // cache line or address?
+    const cacheAndState = this.addressToCacheAndState[address];
     if (!cacheAndState) {
       // no one has it, load from main memory and note that it is now cached
-      addressToCacheAndState[address] = [requestor, MESIState.E];
+      this.addressToCacheAndState[address] = [requestor, MESIState.E];
       return loadFromMainMemory(address);
     } else {
       const [l1CacheWithValue, state] = cacheAndState;
       switch (state) {
           case MESIState.S: // other cache has it
             // when writing, why do we care about the previous value?
-            addressToCacheAndState[address] = [requestor, MESIState.E];
+            this.addressToCacheAndState[address] = [requestor, MESIState.E];
             return l1CacheWithValue.snoopInvalidate(address);
           default:
             throw new Error('What do we do here?');
@@ -40,10 +46,14 @@ class L2Cache {
     }
   }
 
+  /**
+   * When an L1Cache tries to read a value and it doesn't have it, it calls this method to
+   * ask the L2Cache to share the value from main memory or from another L1Cache.
+   */
   requestForShare(address, requestor) {
-    const cacheAndState = addressToCacheAndState[address]; // cache line or address?
+    const cacheAndState = this.addressToCacheAndState[address];
     if (!cacheAndState) {
-      addressToCacheAndState[address] = [requestor, MESIState.S];
+      this.addressToCacheAndState[address] = [requestor, MESIState.S];
       return loadFromMainMemory(address);
     } else {
       const [l1CacheWithValue, state] = cacheAndState;
@@ -51,7 +61,7 @@ class L2Cache {
         case MESIState.M:
         case MESIState.E:
           const currentValue = l1CacheWithValue.snoopShare(address);
-          addressToCacheAndState[address] = [l1CacheWithValue, MESIState.S];
+          this.addressToCacheAndState[address] = [l1CacheWithValue, MESIState.S];
           return currentValue;
         case MESIState.S:
           return l1CacheWithValue.addressToValue[address];

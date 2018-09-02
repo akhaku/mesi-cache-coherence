@@ -1,21 +1,25 @@
 const MESIState = require('./MESIState');
+
+const NUM_CACHE_LINES = 2;
 /**
  * An L1 cache. Each core has its own L1 cache.
- * Note that for simplicy's sake, we assume that every memory address is on its own cache
- * line.
+ * Note that for simplicy's sake, we assume that there are only 2 cache lines.
  */
 class L1Cache {
-  constructor(name, l2cache) {
+  constructor(name, l2Cache) {
     this.name = name;
-    this.l2cache = l2cache;
-    this.cacheLineToState = {}; // address as a string to state
-    this.addressToValue = {};
+    this.l2Cache = l2Cache;
+    this.cacheLineToState = {}; // cache line (integer) to MESIState
+    this.addressToValue = {}; // address as a string to the value stored there
   }
 
   getName() {
     return this.name;
   }
 
+  /**
+   * Write a value to an address.
+   */
   write(address, value) {
     // compute cache line and figure out what state it is in
     const cacheLine = computeCacheLine(address);
@@ -29,7 +33,7 @@ class L1Cache {
         case MESIState.S:
         case MESIState.EMPTY:
           // request for ownership - ack returns the current value, lets us change state
-          const currentValue = l2Cache.requestForOwnership(address, this);
+          const currentValue = this.l2Cache.requestForOwnership(address, this);
           this.cacheLineToState[cacheLine] = MESIState.M;
           this.addressToValue[address] = value;
           break;
@@ -38,6 +42,10 @@ class L1Cache {
     }
   }
 
+  /**
+   * Reads a value from an address. The value may be in this cache, in a sister cache, or
+   * in no L1 cache at all.
+   */
   read(address) {
     const cacheLine = computeCacheLine(address);
     const cacheLineState = this.cacheLineToState[cacheLine] || MESIState.EMPTY;
@@ -48,28 +56,53 @@ class L1Cache {
         return this.addressToValue[address];
       case MESIState.I:
       case MESIState.EMPTY:
-        const currentValue = l2cache.requestForShare(address, this);
+        const currentValue = this.l2Cache.requestForShare(address, this);
         this.cacheLineToState[cacheLine] = MESIState.S;
         this.addressToValue[address] = currentValue;
         return currentValue;
     }
   }
 
+  /**
+   * This method allows the L2 cache to get the current value and invalidate this L1
+   * cache.
+   */
   snoopInvalidate(address) {
+    const cacheLine = computeCacheLine(address);
+
     // sanity checks
-    if (!this.cacheLineToState[computeCacheLine(address)]
+    if (!this.cacheLineToState[cacheLine]
         || !this.addressToValue[address]) {
       throw new Error(`Missing data at address ${address}`);
     }
 
-    this.cacheLineToState[computeCacheLine(address)] = MESIState.I;
-    // return the existing data, this is also like an ack
-    return this.addressToValue[address];
+    const state = cacheLineToState[cacheLine];
+    switch (state) {
+      case MESIState.M:
+      case MESIState.E:
+      case MESIState.S:
+        this.cacheLineToState[computeCacheLine(address)] = MESIState.I;
+        return this.addressToValue[address]; // effectively an ack, too
+      default:
+        throw new Error('Should not be snooping on a cache with no value');
+    }
   }
 
+  /**
+   * This method allows the L1 cache to get the current value to share with another L1
+   * cache.
+   */
   snoopShare(address) {
-    const cacheLineState = this.cacheLineToState[cacheLine] || MESIState.EMPTY;
-    switch (cacheAndState) {
+    const cacheLine = computeCacheLine(address);
+
+    // sanity checks
+    if (!this.cacheLineToState[cacheLine]
+        || !this.addressToValue[address]) {
+      throw new Error(`Missing data at address ${address}`);
+    }
+
+    const cacheLineState = this.cacheLineToState[cacheLine];
+    switch (cacheLineState) {
       case MESIState.M:
       case MESIState.E:
         this.cacheLineToState[cacheLine] = MESIState.S;
@@ -77,11 +110,12 @@ class L1Cache {
       default:
         throw new Error('Should not be calling snoopShare unless M or E');
     }
+  }
 }
 
 function computeCacheLine(address) {
-  // for simplicity's sake we are assuming two cache lines, based on the string length
-  return address.length % 2;
+  // for simplicity's sake we are doing a modulo of the the string length
+  return address.length % NUM_CACHE_LINES;
 }
 
 module.exports = L1Cache;
